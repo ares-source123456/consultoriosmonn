@@ -1,0 +1,74 @@
+{% extends "base.html" %}
+
+{% block title %}Usuarios Administrativos{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="section-header">
+        <h1>👥 Usuarios Administrativos</h1>
+        <a href="{{ url_for('admin.crear_usuario_admin') }}" class="btn btn-primary">
+            + Nuevo Usuario
+        </a>
+    </div>
+
+    <div class="table-responsive">
+        <table class="table">
+            <thead>
+                <tr>
+                    <th>ID</th>
+                    <th>Nombre Completo</th>
+                    <th>DNI</th>
+                    <th>Email</th>
+                    <th>Teléfono</th>
+                    <th>Rol</th>
+                    <th>Estado</th>
+                    <th>Fecha Registro</th>
+                    <th>Acciones</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for usuario in usuarios %}
+                <tr>
+                    <td>{{ usuario.id }}</td>
+                    <td>{{ usuario.nombre }} {{ usuario.apellido }}</td>
+                    <td>{{ usuario.dni }}</td>
+                    <td>{{ usuario.email }}</td>
+                    <td>{{ usuario.telefono or '-' }}</td>
+                    <td>
+                        <span class="badge {{ 'badge-danger' if usuario.rol.value == 'admin' else 'badge-info' }}">
+                            {{ usuario.rol.value|upper }}
+                        </span>
+                    </td>
+                    <td>
+                        {% if usuario.activo %}
+                            <span class="badge badge-success">ACTIVO</span>
+                        {% else %}
+                            <span class="badge badge-danger">INACTIVO</span>
+                        {% endif %}
+                    </td>
+                    <td>{{ usuario.fecha_registro.strftime('%d/%m/%Y') }}</td>
+                    <td>
+                        <a href="{{ url_for('admin.editar_usuario_admin', id=usuario.id) }}" 
+                           class="btn btn-small btn-secondary">Editar</a>
+                        
+                        {% if usuario.activo %}
+                        <form method="POST" action="{{ url_for('admin.desactivar_usuario_admin', id=usuario.id) }}" 
+                              style="display: inline;"
+                              onsubmit="return confirm('¿Desactivar este usuario?')">
+                            <button type="submit" class="btn btn-small btn-danger">Desactivar</button>
+                        </form>
+                        {% endif %}
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+
+    {% if not usuarios %}
+    <div class="alert alert-info">
+        <p>No hay usuarios administrativos registrados.</p>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

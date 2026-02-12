@@ -1,0 +1,248 @@
+{% extends "base.html" %}
+
+{% block title %}Inicio - Consultorios Monn{% endblock %}
+
+{% block content %}
+<!-- Banner de Instalación PWA - Solo en Index -->
+<div id="install-banner" style="display: none; background: #007bff; color: white; padding: 15px; text-align: center; position: sticky; top: 0; z-index: 9999;">
+    <span>¡Descarga nuestra App para una mejor experiencia!</span>
+    <button id="btn-install" class="btn-primary" style="margin-left: 10px; background: white; color: #007bff;">Instalar</button>
+    <button onclick="document.getElementById('install-banner').style.display='none'" style="background: none; border: none; color: white; margin-left: 10px; cursor: pointer;">✕</button>
+</div>
+
+<!-- Hero Section -->
+<section class="hero-section">
+    <div class="hero-content">
+        <div class="hero-announcement">
+            ✨ Nueva Prepaga Disponible
+        </div>
+        <h1 class="hero-title">Unite y Atendete Gratis en Nuestros Consultorios</h1>
+        <p class="hero-subtitle">
+            Suscribite a nuestra prepaga mensual y accedé a atención médica de calidad sin preocuparte por costos adicionales. 
+            Planes flexibles para vos y tu familia.
+        </p>
+        <div class="hero-cta">
+            {% if not session.get('user_id') %}
+                <a href="{{ url_for('register') }}" class="btn-primary">
+                    Comenzar Ahora
+                    
+                </a>
+                <a href="#planes" class="btn-secondary">Ver Planes</a>
+            {% else %}
+                <a href="{{ url_for('nuevo_turno') }}" class="btn-primary">Solicitar Turno</a>
+                <a href="{{ url_for('dashboard_user') }}" class="btn-secondary">Mi Panel</a>
+            {% endif %}
+        </div>
+    </div>
+</section>
+
+<!-- Sección Informativa: Cómo Usar el Sistema -->
+<section style="background: #f8f9fa; padding: 40px 20px; margin: 40px 0; border-radius: 15px; box-shadow: 0 2px 10px rgba(0,0,0,0.1);">
+    <div style="max-width: 1000px; margin: 0 auto; text-align: center; color: #333;">
+        <h2 style="font-size: 2rem; margin-bottom: 20px; font-weight: 700; color: #007bff;">
+            📋 ¿Cómo Sacar Turnos y Realizar Pagos?
+        </h2>
+        <div style="background: white; padding: 30px; border-radius: 12px; margin-top: 20px; box-shadow: 0 2px 8px rgba(0,0,0,0.08);">
+            <p style="font-size: 1.2rem; line-height: 1.8; margin-bottom: 20px; color: #555;">
+                <strong>Para acceder al sistema de turnos online y realizar pagos, necesitás:</strong>
+            </p>
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 20px; margin-top: 25px;">
+                <div style="background: #f0f7ff; padding: 20px; border-radius: 10px; border: 2px solid #007bff;">
+                    <div style="font-size: 2.5rem; margin-bottom: 10px;">1️⃣</div>
+                    <h3 style="font-size: 1.3rem; margin-bottom: 10px; color: #007bff;">Crear Usuario</h3>
+                    <p style="font-size: 1rem; color: #666;">Registrate gratis en nuestro sistema</p>
+                </div>
+                <div style="background: #f0f7ff; padding: 20px; border-radius: 10px; border: 2px solid #007bff;">
+                    <div style="font-size: 2.5rem; margin-bottom: 10px;">2️⃣</div>
+                    <h3 style="font-size: 1.3rem; margin-bottom: 10px; color: #007bff;">Iniciar Sesión</h3>
+                    <p style="font-size: 1rem; color: #666;">Accedé con tu usuario y contraseña</p>
+                </div>
+                <div style="background: #f0f7ff; padding: 20px; border-radius: 10px; border: 2px solid #007bff;">
+                    <div style="font-size: 2.5rem; margin-bottom: 10px;">3️⃣</div>
+                    <h3 style="font-size: 1.3rem; margin-bottom: 10px; color: #007bff;">Solicitar Turno</h3>
+                    <p style="font-size: 1rem; color: #666;">Elegí especialidad, médico y horario</p>
+                </div>
+            </div>
+            {% if not session.get('user_id') %}
+            <div style="margin-top: 30px;">
+                <a href="{{ url_for('register') }}" style="display: inline-block; background: #007bff; color: white; padding: 15px 40px; border-radius: 50px; text-decoration: none; font-weight: 700; font-size: 1.1rem; box-shadow: 0 4px 12px rgba(0,123,255,0.3); transition: all 0.3s;">
+                    🚀 Crear Mi Usuario Ahora
+                </a>
+                <p style="margin-top: 15px; font-size: 0.95rem; color: #666;">
+                    ✅ Gratis • ✅ Rápido • ✅ Sin compromiso
+                </p>
+            </div>
+            {% endif %}
+        </div>
+        <div style="margin-top: 25px; padding: 20px; background: #fff9e6; border-radius: 10px; border-left: 4px solid #ffc107; box-shadow: 0 2px 8px rgba(0,0,0,0.08);">
+            <p style="font-size: 1rem; margin: 0; color: #856404;">
+                💡 <strong>Importante:</strong> La prepaga es opcional. Podés sacar turnos y pagar por consulta individual sin necesidad de contratar un plan mensual.
+            </p>
+        </div>
+    </div>
+</section>
+
+<!-- Plans Section -->
+<section class="plans-section" id="planes">
+    <h2 class="section-title">Nuestros Planes de Prepaga</h2>
+    <p style="text-align: center; color: #666; margin-bottom: 30px; font-size: 1.1rem;">
+        Si preferís no preocuparte por pagos por consulta, conocé nuestros planes mensuales
+    </p>
+    <div class="plans-grid">
+        <!-- Plan Individual -->
+        <div class="plan-card">
+            <div class="plan-header">
+                <h3 class="plan-name">Individual</h3>
+                <div class="plan-price">$75.000</div>
+                <p class="plan-price-label">Por mes</p>
+            </div>
+            <ul class="plan-features">
+                <li>✓ Hasta 10 atenciones mensuales</li>
+                <li>✓ Todas las especialidades</li>
+                <li>✓ Turnos online 24/7</li>
+                <li>✓ Historial médico digital</li>
+                <li>✓ Sin costos adicionales por consulta</li>
+            </ul>
+            {% if not session.get('user_id') %}
+                <a href="{{ url_for('register') }}" class="btn-primary" style="width: 100%;">Elegir Plan</a>
+            {% endif %}
+            <p class="plan-note">*Incluye hasta 10 consultas gratuitas por mes</p>
+        </div>
+
+        <!-- Plan Pareja -->
+        <div class="plan-card featured">
+            <div class="plan-header">
+                <h3 class="plan-name">Pareja</h3>
+                <div class="plan-price">$110.000</div>
+                <p class="plan-price-label">Por mes</p>
+            </div>
+            <ul class="plan-features">
+                <li>✓ Hasta 10 atenciones mensuales por persona</li>
+                <li>✓ Todas las especialidades</li>
+                <li>✓ Turnos online 24/7</li>
+                <li>✓ Historial médico digital</li>
+                <li>✓ Sin costos adicionales por consulta</li>
+                <li>✓ Cobertura para 2 personas</li>
+            </ul>
+            {% if not session.get('user_id') %}
+                <a href="{{ url_for('register') }}" class="btn-primary" style="width: 100%;">Elegir Plan</a>
+            {% endif %}
+            <p class="plan-note">*Incluye hasta 10 consultas gratuitas en total</p>
+        </div>
+
+        <!-- Plan Familiar -->
+        <div class="plan-card">
+            <div class="plan-header">
+                <h3 class="plan-name">Familiar</h3>
+                <div class="plan-price">$150.000</div>
+                <p class="plan-price-label">Por mes</p>
+            </div>
+            <ul class="plan-features">
+                <li>✓ Hasta 10 atenciones mensuales por persona</li>
+                <li>✓ Todas las especialidades</li>
+                <li>✓ Turnos online 24/7</li>
+                <li>✓ Historial médico digital</li>
+                <li>✓ Sin costos adicionales por consulta</li>
+                <li>✓ Cobertura para hasta 4 personas</li>
+                <li>✓ Medico en linea para consultas sin moverte de tu casa</li>
+            </ul>
+            {% if not session.get('user_id') %}
+                <a href="{{ url_for('register') }}" class="btn-primary" style="width: 100%;">Elegir Plan</a>
+            {% endif %}
+            <p class="plan-note">*Incluye hasta 10 consultas gratuitas en total</p>
+        </div>
+        <!-- Plan Maxi -->
+        <div class="plan-card">
+            <div class="plan-header">
+                <h3 class="plan-name">Familiar Maxi</h3>
+                <div class="plan-price">$210.000</div>
+                <p class="plan-price-label">Por mes</p>
+            </div>
+            <ul class="plan-features">
+                <li>✓ Hasta 10 atenciones mensuales por persona</li>
+                <li>✓ Todas las especialidades</li>
+                <li>✓ Turnos online 24/7</li>
+                <li>✓ Historial médico digital</li>
+                <li>✓ Sin costos adicionales por consulta</li>
+                <li>✓ Cobertura para mas de 4 personas</li>
+                <li>✓ Medico en linea para consultas sin moverte de tu casa</li>
+            </ul>
+            {% if not session.get('user_id') %}
+                <a href="{{ url_for('register') }}" class="btn-primary" style="width: 100%;">Elegir Plan</a>
+            {% endif %}
+            <p class="plan-note">*Incluye hasta 10 consultas gratuitas en total</p>
+        </div>
+    </div>
+</section>
+
+<!-- Locations Section -->
+<section class="locations-section" id="consultorios">
+    <h2 class="section-title">Nuestros Consultorios</h2>
+    <div class="locations-grid">
+        <!-- Consultorio 1 -->
+        <div class="location-card">
+            <h3 class="location-title">Consultorio Monn - 1</h3>
+            <div class="location-info">
+                <div class="location-item">
+                    <span class="location-icon">📍</span>
+                    <p class="location-text">[Dirección del consultorio moon1]</p>
+                </div>
+                <div class="location-item">
+                    <span class="location-icon">📞</span>
+                    <p class="location-text">[Teléfono moon1]</p>
+                </div>
+                <div class="location-item">
+                    <span class="location-icon">🕐</span>
+                    <p class="location-text">Lunes a Viernes: 8:00 - 20:00<br>Sábados: 9:00 - 13:00</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Consultorio 2 -->
+        <div class="location-card">
+            <h3 class="location-title">Consultorio Monn - 2</h3>
+            <div class="location-info">
+                <div class="location-item">
+                    <span class="location-icon">📍</span>
+                    <p class="location-text">[Dirección del consultorio moon2]</p>
+                </div>
+                <div class="location-item">
+                    <span class="location-icon">📞</span>
+                    <p class="location-text">[Teléfono moon2]</p>
+                </div>
+                <div class="location-item">
+                    <span class="location-icon">🕐</span>
+                    <p class="location-text">Lunes a Viernes: 8:00 - 20:00<br>Sábados: 9:00 - 13:00</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    // Script PWA solo para la página de inicio
+    let deferredPrompt;
+    const installBanner = document.getElementById('install-banner');
+    const btnInstall = document.getElementById('btn-install');
+
+    window.addEventListener('beforeinstallprompt', (e) => {
+        e.preventDefault();
+        deferredPrompt = e;
+        installBanner.style.display = 'block';
+    });
+
+    btnInstall.addEventListener('click', async () => {
+        if (deferredPrompt) {
+            deferredPrompt.prompt();
+            const { outcome } = await deferredPrompt.userChoice;
+            if (outcome === 'accepted') {
+                console.log('El usuario aceptó la instalación');
+            }
+            deferredPrompt = null;
+            installBanner.style.display = 'none';
+        }
+    });
+</script>
+{% endblock %}

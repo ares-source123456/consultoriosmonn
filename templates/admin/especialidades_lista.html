@@ -1,0 +1,91 @@
+{% extends "base.html" %}
+
+{% block title %}Gestión de Especialidades{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="section-header">
+        <h1>⚕️ Gestión de Especialidades</h1>
+        <a href="{{ url_for('admin.crear_especialidad') }}" class="btn btn-primary">
+            + Nueva Especialidad
+        </a>
+    </div>
+
+    <div class="table-responsive">
+        <table class="table">
+            <thead>
+                <tr>
+                    <th>ID</th>
+                    <th>Nombre</th>
+                    <th>📍 Dirección / Consultorio</th>
+                    <th>Costo Base</th>
+                    <th>Duración Turno</th>
+                    <th>Estado</th>
+                    <th>Especialistas</th>
+                    <th>Acciones</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for esp in especialidades %}
+                <tr class="{{ 'inactive-row' if not esp.activo }}">
+                    <td>{{ esp.id }}</td>
+                    <td>
+                        <strong>{{ esp.nombre }}</strong><br>
+                        <small class="text-muted">{{ esp.descripcion or '' }}</small>
+                    </td>
+                    <td>
+                        <span class="address-text">
+                            {{ esp.direccion if esp.direccion else 'No asignada' }}
+                        </span>
+                    </td>
+                    <td>${{ "%.2f"|format(esp.costo_consulta) }}</td>
+                    <td>{{ esp.duracion_turno }} min</td>
+                    <td>
+                        {% if esp.activo %}
+                            <span class="badge badge-success">ACTIVA</span>
+                        {% else %}
+                            <span class="badge badge-danger">INACTIVA</span>
+                        {% endif %}
+                    </td>
+                    <td>
+                        {{ esp.especialistas_asignados|length if esp.especialistas_asignados else 0 }} especialista(s)
+                    </td>
+                    <td>
+                        <div class="btn-group">
+                            <a href="{{ url_for('admin.editar_especialidad', id=esp.id) }}" 
+                               class="btn btn-small btn-secondary">Editar</a>
+                            
+                            {% if esp.activo %}
+                            <form method="POST" action="{{ url_for('admin.eliminar_especialidad', id=esp.id) }}" 
+                                  style="display: inline;"
+                                  onsubmit="return confirm('¿Desactivar esta especialidad?')">
+                                <button type="submit" class="btn btn-small btn-danger">Desactivar</button>
+                            </form>
+                            {% endif %}
+                        </div>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<style>
+.inactive-row {
+    opacity: 0.6;
+    background-color: #f8f9fa;
+}
+.btn-group {
+    display: flex;
+    gap: 5px;
+}
+.address-text {
+    font-weight: 500;
+    color: #2c3e50;
+}
+.text-muted {
+    font-size: 0.85em;
+}
+</style>
+{% endblock %}

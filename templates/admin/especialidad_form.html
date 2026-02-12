@@ -1,0 +1,88 @@
+{% extends "base.html" %}
+
+{% block title %}{{ 'Editar' if especialidad else 'Nueva' }} Especialidad{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="form-container">
+        <h1>{{ 'Editar' if especialidad else 'Nueva' }} Especialidad</h1>
+
+        <form method="POST">
+            <div class="form-group">
+                <label for="nombre">Nombre de la Especialidad *</label>
+                <input type="text" id="nombre" name="nombre" class="form-control" 
+                       value="{{ especialidad.nombre if especialidad else '' }}" required 
+                       placeholder="Ej: Odontología, Pediatría...">
+            </div>
+
+            <div class="form-group">
+                <label for="descripcion">Descripción</label>
+                <textarea id="descripcion" name="descripcion" class="form-control" rows="2">{{ especialidad.descripcion if especialidad else '' }}</textarea>
+            </div>
+
+            <div class="form-group">
+                <label for="direccion">📍 Dirección / Consultorio</label>
+                <input type="text" id="direccion" name="direccion" class="form-control" 
+                       value="{{ especialidad.direccion if especialidad else '' }}" 
+                       placeholder="Ej: Av. Rivadavia 123 - Consultorio 4">
+                <small class="text-muted">Indique la ubicación física donde se atiende esta especialidad.</small>
+            </div>
+
+            <div class="form-row">
+                <div class="form-group">
+                    <label for="costo_consulta">Costo Base de Consulta *</label>
+                    <div class="input-group">
+                        <span class="input-group-addon">$</span>
+                        <input type="number" id="costo_consulta" name="costo_consulta" 
+                               class="form-control" step="0.01" min="0"
+                               value="{{ especialidad.costo_consulta if especialidad else '' }}" required>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label for="duracion_turno">Duración Turno (minutos) *</label>
+                    <select id="duracion_turno" name="duracion_turno" class="form-control" required>
+                        <option value="15" {{ 'selected' if especialidad and especialidad.duracion_turno == 15 }}>15 minutos</option>
+                        <option value="30" {{ 'selected' if especialidad and especialidad.duracion_turno == 30 else 'selected' }}>30 minutos</option>
+                        <option value="45" {{ 'selected' if especialidad and especialidad.duracion_turno == 45 }}>45 minutos</option>
+                        <option value="60" {{ 'selected' if especialidad and especialidad.duracion_turno == 60 }}>60 minutos</option>
+                    </select>
+                </div>
+            </div>
+
+            <div class="form-group mt-3">
+                <label class="checkbox-container">
+                    <input type="checkbox" name="activo" 
+                           {{ 'checked' if not especialidad or especialidad.activo }}>
+                    <span class="checkmark"></span>
+                    Especialidad Activa
+                </label>
+            </div>
+
+            <div class="form-actions">
+                <button type="submit" class="btn btn-primary">
+                    {{ 'Actualizar' if especialidad else 'Crear' }} Especialidad
+                </button>
+                <a href="{{ url_for('admin.listar_especialidades') }}" class="btn btn-secondary">Cancelar</a>
+            </div>
+        </form>
+    </div>
+</div>
+
+<style>
+.form-container {
+    max-width: 700px;
+    margin: 20px auto;
+    padding: 30px;
+    background: #fff;
+    border-radius: 8px;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+}
+.form-group { margin-bottom: 1.2rem; }
+.form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+.input-group { display: flex; align-items: center; }
+.input-group-addon { background: #eee; padding: 10px; border: 1px solid #ccc; border-right: none; }
+.mt-3 { margin-top: 1rem; }
+.text-muted { font-size: 0.85em; color: #666; }
+</style>
+{% endblock %}

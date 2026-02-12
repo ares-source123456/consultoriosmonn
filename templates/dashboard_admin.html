@@ -1,0 +1,610 @@
+{% extends "base.html" %}
+
+{% block title %}Dashboard Administrativo{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="dashboard-header">
+        <h1>Panel Administrativo</h1>
+        <p>{{ session.get('user_nombre') }} - {{ session.get('user_rol')|upper }}</p>
+    </div>
+
+    <!-- Métricas del Día -->
+    <div class="grid">
+        <div class="card stat-card">
+            <div class="stat-icon">📅</div>
+            <div class="stat-content">
+                <h3>{{ turnos_hoy|length }}</h3>
+                <p>Turnos Hoy</p>
+            </div>
+        </div>
+
+        <div class="card stat-card warning">
+            <div class="stat-icon">⏳</div>
+            <div class="stat-content">
+                <h3>{{ pagos_pendientes }}</h3>
+                <p>Pagos por Revisar</p>
+            </div>
+        </div>
+
+        <div class="card stat-card success">
+            <div class="stat-icon">💰</div>
+            <div class="stat-content">
+                <h3>${{ "%.2f"|format(ingresos_mes) }}</h3>
+                <p>Ingresos del Mes</p>
+            </div>
+        </div>
+
+        <div class="card stat-card danger">
+            <div class="stat-icon">📉</div>
+            <div class="stat-content">
+                <h3>${{ "%.2f"|format(egresos_mes) }}</h3>
+                <p>Egresos del Mes</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Balance del Mes -->
+    <div class="card balance-card">
+        <h3>Balance Mensual</h3>
+        <div class="balance-amount {{ 'positive' if balance >= 0 else 'negative' }}">
+            ${{ "%.2f"|format(balance) }}
+        </div>
+        <p>{{ 'Superávit' if balance >= 0 else 'Déficit' }}</p>
+    </div>
+
+    <!-- Acciones Rápidas -->
+    <section class="section">
+        <h2>Acciones Rápidas</h2>
+        <div class="action-buttons">
+            <a href="{{ url_for('buscar_paciente') }}" class="btn btn-primary">
+                🔍 Buscar Paciente
+            </a>
+            <a href="{{ url_for('revisar_pagos') }}" class="btn btn-warning">
+                💳 Revisar Pagos ({{ pagos_pendientes }})
+            </a>
+            {% if session.get('user_rol') == 'admin' %}
+            <a href="{{ url_for('ver_movimientos') }}" class="btn btn-secondary">
+                📊 Ver Movimientos
+            </a>
+            <a href="{{ url_for('nuevo_movimiento') }}" class="btn btn-secondary">
+                ➕ Registrar Egreso
+            </a>
+            {% endif %}
+        </div>
+    </section>
+
+    <!-- Turnos del Día con Búsqueda Rápida -->
+    <section class="section">
+        <div class="section-header-with-search">
+            <h2 id="sectionTitle">📅 Agenda del Día ({{ 'today'|default('')|replace('today', 'Hoy') }})</h2>
+            
+            <!-- Búsqueda Rápida -->
+            <div class="quick-search-container">
+                <div class="search-box">
+                    <input type="text" 
+                           id="quickSearchDNI" 
+                           class="form-control search-input" 
+                           placeholder="🔍 Buscar turnos por DNI..." 
+                           autocomplete="off">
+                    <button id="clearSearch" class="btn-clear" title="Limpiar búsqueda">✕</button>
+                </div>
+                <div id="searchResults" class="search-results-count"></div>
+            </div>
+        </div>
+        
+        <!-- Tabla de turnos de HOY -->
+        <div id="turnosHoyContainer">
+            {% if turnos_hoy %}
+            <div class="table-responsive">
+                <table class="table" id="turnosTable">
+                    <thead>
+                        <tr>
+                            <th>Hora</th>
+                            <th>Paciente</th>
+                            <th>DNI</th>
+                            <th>Especialidad</th>
+                            <th>Especialista</th>
+                            <th>Estado</th>
+                            <th>Pago</th>
+                            <th>Acciones</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for turno in turnos_hoy %}
+                        <tr class="turno-row {{ 'realizado' if turno.estado.value == 'realizado' else '' }}" 
+                            data-dni="{% if turno.familiar %}{{ turno.familiar.dni }}{% else %}{{ turno.paciente.dni }}{% endif %}"
+                            data-nombre="{% if turno.familiar %}{{ turno.familiar.nombre }} {{ turno.familiar.apellido }}{% else %}{{ turno.paciente.nombre }} {{ turno.paciente.apellido }}{% endif %}"
+                            data-fecha="{{ turno.fecha.strftime('%Y-%m-%d') }}"
+                            data-es-hoy="true">
+                            <td><strong>{{ turno.hora.strftime('%H:%M') }}</strong></td>
+                            <td>
+                                {% if turno.familiar %}
+                                    {{ turno.familiar.nombre }} {{ turno.familiar.apellido }}
+                                {% else %}
+                                    {{ turno.paciente.nombre }} {{ turno.paciente.apellido }}
+                                {% endif %}
+                            </td>
+                            <td class="dni-cell">
+                                {% if turno.familiar %}
+                                    {{ turno.familiar.dni }}
+                                {% else %}
+                                    {{ turno.paciente.dni }}
+                                {% endif %}
+                            </td>
+                            <td>{{ turno.especialidad.nombre }}</td>
+                            <td>
+                                {% if turno.especialista %}
+                                    Dr/a. {{ turno.especialista.apellido }}
+                                {% else %}
+                                    <span class="text-muted">Sin asignar</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                <span class="badge badge-{{ turno.estado.value }}">
+                                    {{ turno.estado.value|upper }}
+                                </span>
+                            </td>
+                            <td>
+                                {% if turno.pago %}
+                                    <span class="badge badge-{{ turno.pago.estado.value }}">
+                                        {{ turno.pago.estado.value|upper }}
+                                    </span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                {% if turno.pago and turno.pago.estado.value == 'pendiente' %}
+                                    <form method="POST" action="{{ url_for('marcar_abonado', pago_id=turno.pago.id) }}" 
+                                          style="display: inline;">
+                                        <button type="submit" class="btn btn-small btn-success" 
+                                                onclick="return confirm('¿Marcar como abonado en efectivo?')">
+                                            💵 Marcar Abonado
+                                        </button>
+                                    </form>
+                                {% endif %}
+                                
+                                <a href="{{ url_for('buscar_paciente') }}?dni={{ turno.paciente.dni }}" 
+                                   class="btn btn-small">Ver Ficha</a>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            {% else %}
+            <div class="alert alert-info">
+                <p>No hay turnos programados para hoy.</p>
+            </div>
+            {% endif %}
+        </div>
+        
+        <!-- Contenedor para mostrar turnos futuros cuando se busca -->
+        <div id="turnosFuturosContainer" style="display: none;">
+            <div class="alert alert-info">
+                <p>🔍 Buscando turnos futuros...</p>
+            </div>
+        </div>
+        
+        <!-- Mensaje cuando no hay resultados -->
+        <div id="noResultsMessage" class="alert alert-warning" style="display: none;">
+            <p>No se encontraron turnos para el DNI ingresado.</p>
+        </div>
+    </section>
+    
+    <div class="row mb-4">
+        <div class="col-md-3">
+            <div class="card bg-info text-white">
+                <div class="card-body">
+                    <h5>Solicitudes Prepaga</h5>
+                    <h2>{{ solicitudes_prepaga_count }}</h2>
+                    <a href="{{ url_for('prepaga.admin_solicitudes') }}" class="btn btn-light btn-sm">
+                        Ver Solicitudes
+                    </a>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-3">
+            <div class="card bg-warning text-white">
+                <div class="card-body">
+                    <h5>Pagos Mensuales</h5>
+                    <h2>{{ pagos_mensuales_count }}</h2>
+                    <a href="{{ url_for('prepaga.admin_pagos_mensuales') }}" class="btn btn-light btn-sm">
+                        Ver Pagos
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+/* Estilos para la búsqueda rápida */
+.section-header-with-search {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1.5rem;
+    flex-wrap: wrap;
+    gap: 1rem;
+}
+
+.quick-search-container {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+    min-width: 300px;
+}
+
+.search-box {
+    position: relative;
+    display: flex;
+    align-items: center;
+}
+
+.search-input {
+    padding-right: 2.5rem;
+    font-size: 0.95rem;
+    border: 2px solid #e0e0e0;
+    border-radius: 8px;
+    transition: all 0.3s ease;
+}
+
+.search-input:focus {
+    border-color: #4CAF50;
+    box-shadow: 0 0 0 3px rgba(76, 175, 80, 0.1);
+    outline: none;
+}
+
+.btn-clear {
+    position: absolute;
+    right: 8px;
+    background: none;
+    border: none;
+    color: #999;
+    font-size: 1.2rem;
+    cursor: pointer;
+    padding: 0.25rem 0.5rem;
+    border-radius: 4px;
+    transition: all 0.2s ease;
+    display: none;
+}
+
+.btn-clear:hover {
+    background-color: #f0f0f0;
+    color: #666;
+}
+
+.btn-clear.visible {
+    display: block;
+}
+
+.search-results-count {
+    font-size: 0.85rem;
+    color: #666;
+    font-weight: 500;
+    padding-left: 0.5rem;
+}
+
+/* Highlight del DNI cuando se está buscando */
+.turno-row.highlight .dni-cell {
+    background-color: #fff3cd;
+    font-weight: bold;
+    animation: highlightPulse 0.6s ease;
+}
+
+@keyframes highlightPulse {
+    0%, 100% { background-color: #fff3cd; }
+    50% { background-color: #ffe69c; }
+}
+
+/* Animación de fade para las filas filtradas */
+.turno-row {
+    transition: opacity 0.3s ease, transform 0.3s ease;
+}
+
+.turno-row.hidden {
+    display: none;
+}
+
+.turno-row.filtered-out {
+    opacity: 0.3;
+    pointer-events: none;
+}
+
+/* Estilos para tabla de turnos futuros */
+#turnosFuturosContainer .table {
+    margin-top: 1rem;
+}
+
+.future-appointments-header {
+    background-color: #f8f9fa;
+    padding: 1rem;
+    border-radius: 8px;
+    margin-bottom: 1rem;
+    border-left: 4px solid #4CAF50;
+}
+
+.future-appointments-header h3 {
+    margin: 0;
+    color: #333;
+    font-size: 1.1rem;
+}
+
+.future-appointments-header p {
+    margin: 0.25rem 0 0 0;
+    color: #666;
+    font-size: 0.9rem;
+}
+
+/* Badge para fecha futura */
+.badge-fecha-futura {
+    background-color: #2196F3;
+    color: white;
+    padding: 0.25rem 0.5rem;
+    border-radius: 4px;
+    font-size: 0.8rem;
+    font-weight: 600;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+    .section-header-with-search {
+        flex-direction: column;
+        align-items: stretch;
+    }
+    
+    .quick-search-container {
+        width: 100%;
+        min-width: auto;
+    }
+}
+</style>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const searchInput = document.getElementById('quickSearchDNI');
+    const clearBtn = document.getElementById('clearSearch');
+    const turnosHoyContainer = document.getElementById('turnosHoyContainer');
+    const turnosFuturosContainer = document.getElementById('turnosFuturosContainer');
+    const turnosTable = document.getElementById('turnosTable');
+    const searchResults = document.getElementById('searchResults');
+    const noResultsMessage = document.getElementById('noResultsMessage');
+    const sectionTitle = document.getElementById('sectionTitle');
+    
+    if (!searchInput || !turnosTable) return;
+    
+    const turnoRows = Array.from(turnosTable.querySelectorAll('tbody .turno-row'));
+    let searchTimeout = null;
+    
+    // Función para buscar turnos futuros via AJAX
+    async function buscarTurnosFuturos(dni) {
+        try {
+            const response = await fetch(`/admin/buscar-paciente?dni=${dni}&ajax=1`);
+            if (!response.ok) throw new Error('Error en la búsqueda');
+            
+            const data = await response.json();
+            return data;
+        } catch (error) {
+            console.error('Error buscando turnos:', error);
+            return null;
+        }
+    }
+    
+    // Función para crear HTML de turnos futuros
+    function crearFilaTurno(turno) {
+        const esFuturo = turno.es_futuro;
+        const fechaBadge = esFuturo ? `<span class="badge-fecha-futura">${turno.fecha_formateada}</span>` : '';
+        
+        return `
+            <tr class="turno-row highlight">
+                <td>
+                    <strong>${turno.hora}</strong>
+                    ${fechaBadge}
+                </td>
+                <td>${turno.paciente_nombre}</td>
+                <td class="dni-cell">${turno.dni}</td>
+                <td>${turno.especialidad}</td>
+                <td>${turno.especialista || '<span class="text-muted">Sin asignar</span>'}</td>
+                <td>
+                    <span class="badge badge-${turno.estado}">
+                        ${turno.estado.toUpperCase()}
+                    </span>
+                </td>
+                <td>
+                    ${turno.pago_estado ? `<span class="badge badge-${turno.pago_estado}">${turno.pago_estado.toUpperCase()}</span>` : ''}
+                </td>
+                <td>
+                    ${turno.puede_marcar_abonado ? `
+                        <form method="POST" action="/admin/marcar-abonado/${turno.pago_id}" style="display: inline;">
+                            <button type="submit" class="btn btn-small btn-success" 
+                                    onclick="return confirm('¿Marcar como abonado en efectivo?')">
+                                💵 Marcar Abonado
+                            </button>
+                        </form>
+                    ` : ''}
+                    <a href="/admin/buscar-paciente?dni=${turno.dni_titular}" 
+                       class="btn btn-small">Ver Ficha</a>
+                </td>
+            </tr>
+        `;
+    }
+    
+    // Función de búsqueda
+    async function filterTurnos() {
+        const searchValue = searchInput.value.trim();
+        
+        // Mostrar/ocultar botón de limpiar
+        if (searchValue) {
+            clearBtn.classList.add('visible');
+        } else {
+            clearBtn.classList.remove('visible');
+        }
+        
+        // Si no hay búsqueda, mostrar solo turnos de hoy
+        if (!searchValue) {
+            turnoRows.forEach(row => {
+                row.classList.remove('hidden', 'highlight', 'filtered-out');
+            });
+            searchResults.textContent = '';
+            noResultsMessage.style.display = 'none';
+            turnosHoyContainer.style.display = '';
+            turnosFuturosContainer.style.display = 'none';
+            sectionTitle.innerHTML = '📅 Agenda del Día (Hoy)';
+            return;
+        }
+        
+        // Limpiar timeout anterior
+        if (searchTimeout) {
+            clearTimeout(searchTimeout);
+        }
+        
+        // Si el DNI tiene al menos 6 dígitos, buscar turnos futuros
+        if (searchValue.length >= 6) {
+            searchTimeout = setTimeout(async () => {
+                // Cambiar título
+                sectionTitle.innerHTML = `🔍 Turnos para DNI: ${searchValue}`;
+                
+                // Mostrar loading
+                turnosFuturosContainer.innerHTML = `
+                    <div class="alert alert-info">
+                        <p>🔍 Buscando turnos...</p>
+                    </div>
+                `;
+                turnosFuturosContainer.style.display = 'block';
+                
+                // Filtrar turnos de hoy
+                let turnosHoyCount = 0;
+                turnoRows.forEach(row => {
+                    const dni = row.getAttribute('data-dni') || '';
+                    if (dni.includes(searchValue)) {
+                        row.classList.remove('hidden', 'filtered-out');
+                        row.classList.add('highlight');
+                        turnosHoyCount++;
+                    } else {
+                        row.classList.add('hidden');
+                        row.classList.remove('highlight');
+                    }
+                });
+                
+                // Buscar turnos futuros vía AJAX
+                const data = await buscarTurnosFuturos(searchValue);
+                
+                if (data && data.turnos && data.turnos.length > 0) {
+                    const turnosHoy = data.turnos.filter(t => !t.es_futuro);
+                    const turnosFuturos = data.turnos.filter(t => t.es_futuro);
+                    
+                    let html = '';
+                    
+                    if (turnosFuturos.length > 0) {
+                        html += `
+                            <div class="future-appointments-header">
+                                <h3>📅 Turnos Futuros (${turnosFuturos.length})</h3>
+                                <p>Paciente: ${data.paciente_nombre}</p>
+                            </div>
+                            <div class="table-responsive">
+                                <table class="table">
+                                    <thead>
+                                        <tr>
+                                            <th>Fecha/Hora</th>
+                                            <th>Paciente</th>
+                                            <th>DNI</th>
+                                            <th>Especialidad</th>
+                                            <th>Especialista</th>
+                                            <th>Estado</th>
+                                            <th>Pago</th>
+                                            <th>Acciones</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        ${turnosFuturos.map(crearFilaTurno).join('')}
+                                    </tbody>
+                                </table>
+                            </div>
+                        `;
+                    }
+                    
+                    turnosFuturosContainer.innerHTML = html;
+                    turnosFuturosContainer.style.display = turnosFuturos.length > 0 ? 'block' : 'none';
+                    
+                    const totalTurnos = turnosHoyCount + turnosFuturos.length;
+                    
+                    if (totalTurnos > 0) {
+                        searchResults.textContent = `${totalTurnos} turno${totalTurnos !== 1 ? 's' : ''} encontrado${totalTurnos !== 1 ? 's' : ''} (${turnosHoyCount} hoy, ${turnosFuturos.length} futuros)`;
+                        searchResults.style.color = '#4CAF50';
+                        noResultsMessage.style.display = 'none';
+                        turnosHoyContainer.style.display = turnosHoyCount > 0 ? '' : 'none';
+                    } else {
+                        searchResults.textContent = 'No se encontraron turnos';
+                        searchResults.style.color = '#f44336';
+                        noResultsMessage.style.display = 'block';
+                        turnosHoyContainer.style.display = 'none';
+                    }
+                } else {
+                    // No se encontraron turnos
+                    turnosFuturosContainer.style.display = 'none';
+                    
+                    if (turnosHoyCount === 0) {
+                        searchResults.textContent = 'No se encontraron turnos';
+                        searchResults.style.color = '#f44336';
+                        noResultsMessage.style.display = 'block';
+                        turnosHoyContainer.style.display = 'none';
+                    } else {
+                        searchResults.textContent = `${turnosHoyCount} turno${turnosHoyCount !== 1 ? 's' : ''} encontrado${turnosHoyCount !== 1 ? 's' : ''} (solo hoy)`;
+                        searchResults.style.color = '#4CAF50';
+                        noResultsMessage.style.display = 'none';
+                        turnosHoyContainer.style.display = '';
+                    }
+                }
+            }, 500); // Esperar 500ms después de que el usuario deje de escribir
+        } else {
+            // Búsqueda simple solo en turnos de hoy
+            let visibleCount = 0;
+            turnoRows.forEach(row => {
+                const dni = row.getAttribute('data-dni') || '';
+                if (dni.includes(searchValue)) {
+                    row.classList.remove('hidden', 'filtered-out');
+                    row.classList.add('highlight');
+                    visibleCount++;
+                } else {
+                    row.classList.remove('highlight');
+                    row.classList.add('hidden');
+                }
+            });
+            
+            turnosFuturosContainer.style.display = 'none';
+            
+            if (visibleCount > 0) {
+                searchResults.textContent = `${visibleCount} turno${visibleCount !== 1 ? 's' : ''} encontrado${visibleCount !== 1 ? 's' : ''} (hoy)`;
+                searchResults.style.color = '#4CAF50';
+                noResultsMessage.style.display = 'none';
+                turnosHoyContainer.style.display = '';
+            } else {
+                searchResults.textContent = 'No se encontraron resultados';
+                searchResults.style.color = '#f44336';
+                noResultsMessage.style.display = 'block';
+                turnosHoyContainer.style.display = 'none';
+            }
+        }
+    }
+    
+    // Event listeners
+    searchInput.addEventListener('input', filterTurnos);
+    
+    clearBtn.addEventListener('click', function() {
+        searchInput.value = '';
+        filterTurnos();
+        searchInput.focus();
+    });
+    
+    // Atajos de teclado
+    searchInput.addEventListener('keydown', function(e) {
+        if (e.key === 'Escape') {
+            searchInput.value = '';
+            filterTurnos();
+        }
+    });
+});
+</script>
+
+{% endblock %}

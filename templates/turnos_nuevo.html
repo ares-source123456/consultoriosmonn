@@ -1,0 +1,343 @@
+{% extends "base.html" %}
+
+{% block title %}Solicitar Turno{% endblock %}
+
+{% block extra_css %}
+<style>
+    .especialistas-grid, .horarios-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+        gap: 15px;
+        margin-top: 15px;
+    }
+
+    .especialista-card-option input[type="radio"] {
+        display: none;
+    }
+
+    .especialista-card-option label {
+        display: block;
+        padding: 20px;
+        border: 2px solid #e2e8f0;
+        border-radius: 12px;
+        cursor: pointer;
+        text-align: center;
+        transition: all 0.3s ease;
+        background: white;
+    }
+
+    .especialista-card-option input[type="radio"]:checked + label {
+        border-color: #3182ce;
+        background-color: #ebf8ff;
+        transform: translateY(-2px);
+        box-shadow: 0 4px 12px rgba(49, 130, 206, 0.15);
+    }
+
+    .horario-btn {
+        padding: 12px;
+        border: 1px solid #3182ce;
+        background: white;
+        color: #3182ce;
+        border-radius: 8px;
+        cursor: pointer;
+        font-weight: 500;
+        transition: 0.2s;
+    }
+
+    .horario-btn:hover {
+        background: #3182ce;
+        color: white;
+    }
+
+    .horario-btn.selected {
+        background: #2c5282;
+        color: white;
+        box-shadow: inset 0 2px 4px rgba(0,0,0,0.2);
+    }
+
+    .form-step { display: none; }
+    .form-step.active { display: block; }
+    
+    .loading-spinner {
+        display: none;
+        text-align: center;
+        padding: 20px;
+        color: #4a5568;
+        font-style: italic;
+    }
+
+    .resumen-card {
+        background: #f8fafc;
+        padding: 20px;
+        border-radius: 8px;
+        border-left: 5px solid #3182ce;
+        margin-bottom: 20px;
+    }
+
+    /* Estilo para el cuadro de dirección */
+    .direccion-info-box {
+        margin-top: 20px;
+        padding: 15px;
+        background-color: #e3f2fd;
+        border-left: 5px solid #2196f3;
+        border-radius: 4px;
+        display: none; /* Se muestra por JS */
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="form-container">
+        <h1>Solicitar Nuevo Turno</h1>
+        
+        <form method="POST" action="{{ url_for('nuevo_turno') }}" id="turnoForm">
+            <fieldset class="form-step active" id="step1">
+                <legend>1. ¿Para quién es el turno?</legend>
+                <div class="form-group">
+                    <label class="radio-container">
+                        <input type="radio" name="familiar_id" value="" checked>
+                        <span class="radio-label">Para mí</span>
+                    </label>
+                </div>
+                {% if grupo_familiar %}
+                    {% for familiar in grupo_familiar %}
+                    <div class="form-group">
+                        <label class="radio-container">
+                            <input type="radio" name="familiar_id" value="{{ familiar.id }}">
+                            <span class="radio-label">{{ familiar.nombre }} {{ familiar.apellido }} ({{ familiar.parentesco }})</span>
+                        </label>
+                    </div>
+                    {% endfor %}
+                {% endif %}
+                <div class="form-actions">
+                    <button type="button" class="btn btn-primary" onclick="nextStep(2)">Siguiente</button>
+                </div>
+            </fieldset>
+
+            <fieldset class="form-step" id="step2">
+                <legend>2. Seleccioná la Especialidad</legend>
+                <div class="especialidades-grid">
+                    {% for esp in especialidades %}
+                    <label class="especialidad-card">
+                        <input type="radio" name="especialidad_id" value="{{ esp.id }}" 
+                               data-direccion="{{ esp.direccion if esp.direccion else 'Dirección a confirmar' }}"
+                               onchange="cargarEspecialistas()">
+                        <div class="card-content">
+                            <h3>{{ esp.nombre }}</h3>
+                            <p class="costo">${{ "%.2f"|format(esp.costo_consulta) }}</p>
+                        </div>
+                    </label>
+                    {% endfor %}
+                </div>
+
+                <div id="direccionContenedor" class="direccion-info-box">
+                    <p style="margin: 0; color: #0d47a1;">
+                        <i class="fas fa-map-marker-alt"></i> 
+                        <strong>Ubicación:</strong> Te vas a atender en el consultorio de <span id="direccionTexto"></span>
+                    </p>
+                </div>
+
+                <div class="form-actions">
+                    <button type="button" class="btn btn-secondary" onclick="prevStep(1)">Anterior</button>
+                    <button type="button" class="btn btn-primary" onclick="validarYPasar(2, 3)">Siguiente</button>
+                </div>
+            </fieldset>
+
+            <fieldset class="form-step" id="step3">
+                <legend>3. Seleccioná al Profesional</legend>
+                <div id="loadingEspecialistas" class="loading-spinner">Cargando especialistas...</div>
+                <div id="especialistasGrid" class="especialistas-grid"></div>
+                <input type="hidden" name="especialista_id" id="especialista_id_input">
+                
+                <div class="form-actions">
+                    <button type="button" class="btn btn-secondary" onclick="prevStep(2)">Anterior</button>
+                    <button type="button" class="btn btn-primary" onclick="validarYPasar(3, 4)">Siguiente</button>
+                </div>
+            </fieldset>
+
+            <fieldset class="form-step" id="step4">
+                <legend>4. Elegí Fecha y Hora</legend>
+                <div class="form-group">
+                    <label for="fecha">Fecha de la consulta</label>
+                    <input type="date" id="fecha" name="fecha" class="form-control" 
+                           min="{{ today }}" onchange="cargarHorarios()" required>
+                </div>
+
+                <div id="loadingHorarios" class="loading-spinner">Buscando disponibilidad...</div>
+
+                <div id="horariosContainer" style="display: none; margin-top: 20px;">
+                    <label>Horarios Disponibles para esta fecha:</label>
+                    <div id="horariosGrid" class="horarios-grid"></div>
+                    <input type="hidden" id="hora" name="hora" required>
+                </div>
+
+                <div class="form-actions">
+                    <button type="button" class="btn btn-secondary" onclick="prevStep(3)">Anterior</button>
+                    <button type="button" class="btn btn-primary" onclick="validarYPasar(4, 5)">Siguiente</button>
+                </div>
+            </fieldset>
+
+            <fieldset class="form-step" id="step5">
+                <legend>5. Resumen y Confirmación</legend>
+                <div id="resumenTurno"></div>
+                <div class="form-group">
+                    <label for="motivo_consulta">Motivo de la consulta (Opcional)</label>
+                    <textarea id="motivo_consulta" name="motivo_consulta" class="form-control" rows="3"></textarea>
+                </div>
+                <div class="form-actions">
+                    <button type="button" class="btn btn-secondary" onclick="prevStep(4)">Anterior</button>
+                    <button type="submit" class="btn btn-success btn-large">✓ Confirmar Turno</button>
+                </div>
+            </fieldset>
+        </form>
+    </div>
+</div>
+
+<script>
+let currentStep = 1;
+
+function nextStep(step) {
+    document.querySelectorAll('.form-step').forEach(s => s.classList.remove('active'));
+    document.getElementById(`step${step}`).classList.add('active');
+    currentStep = step;
+    if(step === 5) actualizarResumen();
+}
+
+function prevStep(step) {
+    document.querySelectorAll('.form-step').forEach(s => s.classList.remove('active'));
+    document.getElementById(`step${step}`).classList.add('active');
+    currentStep = step;
+}
+
+function validarYPasar(actual, siguiente) {
+    if (actual === 2 && !document.querySelector('input[name="especialidad_id"]:checked')) 
+        return alert('Seleccioná una especialidad');
+    if (actual === 3 && !document.getElementById('especialista_id_input').value) 
+        return alert('Seleccioná un profesional');
+    if (actual === 4) {
+        if (!document.getElementById('fecha').value || !document.getElementById('hora').value)
+            return alert('Seleccioná fecha y hora');
+    }
+    nextStep(siguiente);
+}
+
+async function cargarEspecialistas() {
+    const radioSelected = document.querySelector('input[name="especialidad_id"]:checked');
+    const espId = radioSelected?.value;
+    const direccion = radioSelected?.getAttribute('data-direccion'); // Captura la dirección
+
+    if (!espId) return;
+
+    // Mostrar el cuadro de dirección inmediatamente
+    const contenedorDireccion = document.getElementById('direccionContenedor');
+    const textoDireccion = document.getElementById('direccionTexto');
+    textoDireccion.textContent = direccion;
+    contenedorDireccion.style.display = 'block';
+
+    const grid = document.getElementById('especialistasGrid');
+    const loader = document.getElementById('loadingEspecialistas');
+    
+    grid.innerHTML = '';
+    loader.style.display = 'block';
+    document.getElementById('especialista_id_input').value = '';
+
+    try {
+        const response = await fetch(`/api/especialistas-por-especialidad?especialidad_id=${espId}`);
+        const data = await response.json();
+        loader.style.display = 'none';
+
+        data.especialistas.forEach(esp => {
+            const div = document.createElement('div');
+            div.className = 'especialista-card-option';
+            div.innerHTML = `
+                <input type="radio" name="esp_radio" id="esp_${esp.id}" value="${esp.id}" 
+                       onchange="seleccionarMedico('${esp.id}')">
+                <label for="esp_${esp.id}">
+                    <strong>${esp.nombre}</strong><br>
+                    <small>Disponible</small>
+                </label>
+            `;
+            grid.appendChild(div);
+        });
+    } catch (e) {
+        loader.style.display = 'none';
+        console.error(e);
+    }
+}
+
+function seleccionarMedico(id) {
+    document.getElementById('especialista_id_input').value = id;
+    if (document.getElementById('fecha').value) {
+        cargarHorarios();
+    }
+}
+
+async function cargarHorarios() {
+    const especialidadId = document.querySelector('input[name="especialidad_id"]:checked')?.value;
+    const especialistaId = document.getElementById('especialista_id_input').value;
+    const fecha = document.getElementById('fecha').value;
+    
+    if (!especialidadId || !especialistaId || !fecha) return;
+
+    const container = document.getElementById('horariosContainer');
+    const grid = document.getElementById('horariosGrid');
+    const loader = document.getElementById('loadingHorarios');
+
+    grid.innerHTML = '';
+    container.style.display = 'none';
+    loader.style.display = 'block';
+
+    try {
+        const url = `/api/turnos/horarios-disponibles?especialidad_id=${especialidadId}&especialista_id=${especialistaId}&fecha=${fecha}`;
+        const response = await fetch(url);
+        const data = await response.json();
+        
+        loader.style.display = 'none';
+        
+        if (data.horarios && data.horarios.length > 0) {
+            data.horarios.forEach(h => {
+                const btn = document.createElement('button');
+                btn.type = 'button';
+                btn.className = 'horario-btn';
+                btn.textContent = h;
+                btn.onclick = () => {
+                    document.querySelectorAll('.horario-btn').forEach(b => b.classList.remove('selected'));
+                    btn.classList.add('selected');
+                    document.getElementById('hora').value = h;
+                };
+                grid.appendChild(btn);
+            });
+            container.style.display = 'block';
+        } else {
+            grid.innerHTML = '<p style="color:red">No hay turnos disponibles para este día.</p>';
+            container.style.display = 'block';
+        }
+    } catch (error) {
+        loader.style.display = 'none';
+        alert('Error al conectar con el servidor');
+    }
+}
+
+function actualizarResumen() {
+    const radioEspecialidad = document.querySelector('input[name="especialidad_id"]:checked');
+    const especialidad = radioEspecialidad?.closest('.especialidad-card').querySelector('h3').textContent;
+    const direccion = radioEspecialidad?.getAttribute('data-direccion'); // Dirección para el resumen
+    
+    const especialista = document.querySelector('input[name="esp_radio"]:checked')?.nextElementSibling.querySelector('strong').textContent;
+    const fecha = document.getElementById('fecha').value;
+    const hora = document.getElementById('hora').value;
+    const paciente = document.querySelector('input[name="familiar_id"]:checked').parentElement.textContent.trim();
+
+    document.getElementById('resumenTurno').innerHTML = `
+        <div class="resumen-card">
+            <p><strong>Paciente:</strong> ${paciente}</p>
+            <p><strong>Especialidad:</strong> ${especialidad}</p>
+            <p><strong>📍 Dirección:</strong> ${direccion}</p>
+            <p><strong>Profesional:</strong> ${especialista}</p>
+            <p><strong>Cita:</strong> ${fecha} a las ${hora} hs</p>
+        </div>
+    `;
+}
+</script>
+{% endblock %}
