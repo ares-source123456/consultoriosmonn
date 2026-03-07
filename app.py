@@ -1455,5 +1455,176 @@ def suspender_suscripciones_vencidas():
     db.session.commit()
     print(f"✅ {suspendidas} suscripciones suspendidas por falta de pago")
 
+
+# ==================== API PARA TURNOS MANUALES ====================
+
+@app.route('/api/buscar-paciente-por-dni')
+@role_required(RolUsuario.ADMIN, RolUsuario.RECEPCION)
+def api_buscar_paciente_por_dni():
+    """API para buscar paciente por DNI"""
+    dni = request.args.get('dni', '').strip()
+    
+    if not dni:
+        return jsonify({'encontrado': False, 'error': 'DNI no proporcionado'}), 400
+    
+    usuario = Usuario.query.filter_by(dni=dni).first()
+    
+    if usuario:
+        return jsonify({
+            'encontrado': True,
+            'id': usuario.id,
+            'nombre': f"{usuario.nombre} {usuario.apellido}",
+            'dni': usuario.dni,
+            'telefono': usuario.telefono,
+            'email': usuario.email
+        })
+    
+    return jsonify({'encontrado': False})
+
+
+@app.route('/api/crear-paciente-rapido', methods=['POST'])
+@role_required(RolUsuario.ADMIN, RolUsuario.RECEPCION)
+def api_crear_paciente_rapido():
+    """API para crear paciente rápidamente desde turno manual"""
+    try:
+        data = request.get_json()
+        
+        nombre = data.get('nombre', '').strip()
+        apellido = data.get('apellido', '').strip()
+        dni = data.get('dni', '').strip()
+        telefono = data.get('telefono', '').strip()
+        email = data.get('email', '').strip()
+        
+        if not all([nombre, apellido, dni, email]):
+            return jsonify({'success': False, 'error': 'Faltan campos obligatorios'}), 400
+        
+        # Verificar que no exista
+        if Usuario.query.filter_by(dni=dni).first():
+            return jsonify({'success': False, 'error': 'Ya existe un usuario con ese DNI'}), 400
+        
+        if Usuario.query.filter_by(email=email).first():
+            return jsonify({'success': False, 'error': 'Ya existe un usuario con ese email'}), 400
+        
+        # Crear usuario con contraseña temporal (DNI)
+        usuario = Usuario(
+            nombre=nombre,
+            apellido=apellido,
+            dni=dni,
+            email=email,
+            telefono=telefono,
+            rol=RolUsuario.PACIENTE
+        )
+        usuario.set_password(dni)  # Contraseña temporal = DNI
+        
+        db.session.add(usuario)
+        db.session.commit()
+        
+        return jsonify({
+            'success': True,
+            'id': usuario.id,
+            'nombre': f"{nombre} {apellido}"
+        })
+        
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+
+@app.route('/admin/turno-manual', methods=['GET', 'POST'])
+@role_required(RolUsuario.ADMIN, RolUsuario.RECEPCION)
+def turno_manual():
+    """Crear turno manual para pacientes presenciales"""
+    if request.method == 'POST':
+        try:
+            paciente_id = request.form.get('paciente_id')
+            especialidad_id = request.form.get('especialidad_id')
+            especialista_id = request.form.get('especialista_id')
+            fecha_str = request.form.get('fecha')
+            hora_str = request.form.get('hora')
+            motivo = request.form.get('motivo_consulta', '')
+            estado_pago = request.form.get('estado_pago', 'efectivo')
+            
+            if not all([paciente_id, especialidad_id, especialista_id, fecha_str, hora_str]):
+                flash('Complete todos los campos obligatorios', 'danger')
+                return redirect(url_for('turno_manual'))
+            
+            fecha_turno = datetime.strptime(fecha_str, '%Y-%m-%d').date()
+            hora_turno = datetime.strptime(hora_str, '%H:%M').time()
+            
+            # Verificar disponibilidad
+            turno_existente = Turno.query.filter_by(
+                especialista_id=int(especialista_id),
+                fecha=fecha_turno,
+                hora=hora_turno
+            ).filter(Turno.estado != EstadoTurno.CANCELADO).first()
+            
+            if turno_existente:
+                flash('Ese horario ya está ocupado', 'danger')
+                return redirect(url_for('turno_manual'))
+            
+            # Crear turno
+            nuevo_turno = Turno(
+                paciente_id=int(paciente_id),
+                especialista_id=int(especialista_id),
+                especialidad_id=int(especialidad_id),
+                fecha=fecha_turno,
+                hora=hora_turno,
+                motivo_consulta=motivo,
+                estado=EstadoTurno.CONFIRMADO  # Se confirma directamente
+            )
+            
+            db.session.add(nuevo_turno)
+            db.session.flush()
+            
+            # Obtener costo
+            especialidad = Especialidad.query.get(especialidad_id)
+            costo = especialidad.costo_consulta
+            
+            # Crear pago
+            if estado_pago == 'efectivo':
+                nuevo_pago = Pago(
+                    turno_id=nuevo_turno.id,
+                    monto=costo,
+                    estado=EstadoPago.ABONADO_EFECTIVO,
+                    fecha_aprobacion=datetime.utcnow(),
+                    aprobado_por=session['user_id']
+                )
+                db.session.add(nuevo_pago)
+                db.session.flush()
+                
+                # Registrar movimiento de ingreso
+                movimiento = Movimiento(
+                    tipo=TipoMovimiento.INGRESO,
+                    monto=costo,
+                    concepto=f"Pago en efectivo - Turno manual #{nuevo_turno.id}",
+                    pago_id=nuevo_pago.id,
+                    usuario_registro=session['user_id']
+                )
+                db.session.add(movimiento)
+            else:
+                nuevo_pago = Pago(
+                    turno_id=nuevo_turno.id,
+                    monto=costo,
+                    estado=EstadoPago.PENDIENTE
+                )
+                db.session.add(nuevo_pago)
+            
+            db.session.commit()
+            
+            flash(f'Turno creado exitosamente para el {fecha_str} a las {hora_str}', 'success')
+            return redirect(url_for('dashboard_admin'))
+            
+        except Exception as e:
+            db.session.rollback()
+            flash(f'Error al crear turno: {str(e)}', 'danger')
+            return redirect(url_for('turno_manual'))
+    
+    # GET
+    especialidades = Especialidad.query.filter_by(activo=True).all()
+    return render_template('turno_manual.html', 
+                         especialidades=especialidades,
+                         today=date.today().isoformat())
+
+
 if __name__ == '__main__':
     app.run(debug=True)
