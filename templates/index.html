@@ -320,8 +320,9 @@
 .index-carousel-slide img {
     width: 100%;
     height: 500px;
-    object-fit: cover;
+    object-fit: contain;
     display: block;
+    background: #f0f4f8;
 }
 
 .index-carousel-caption {
@@ -687,6 +688,8 @@
     
     .index-carousel-slide img {
         height: 300px;
+        object-fit: contain;
+        background: #f0f4f8;
     }
     
     .index-carousel-btn {
@@ -810,7 +813,7 @@
         <div class="index-carousel-container">
             <div class="index-carousel-wrapper">
                 <div class="index-carousel-track" id="carouselTrack">
-                    {% for i in range(1, 11) %}
+                    {% for i in range(1, 9) %}
                     <div class="index-carousel-slide">
                         <img src="{{ url_for('static', filename='images/monn' ~ i ~ '.png') }}" 
                              alt="Instalación {{ i }}"
@@ -829,7 +832,7 @@
             </div>
             
             <div class="index-carousel-dots" id="carouselDots">
-                {% for i in range(10) %}
+                {% for i in range(8) %}
                 <div class="index-carousel-dot {% if i == 0 %}active{% endif %}" onclick="goToSlide({{ i }})"></div>
                 {% endfor %}
             </div>
@@ -977,7 +980,7 @@
 <script>
 // Carrusel de imágenes
 let currentSlide = 0;
-const totalSlides = 10;
+const totalSlides = 8;
 let autoPlayInterval;
 
 function updateCarousel() {
