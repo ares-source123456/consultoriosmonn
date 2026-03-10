@@ -259,6 +259,26 @@
     margin: 0;
 }
 
+.index-video-section {
+    text-align: center;
+    margin: 2rem 0;
+}
+
+.index-video-label {
+    font-size: 1.15rem;
+    font-weight: 600;
+    color: var(--med-primary);
+    margin-bottom: 1rem;
+}
+
+.index-tutorial-video {
+    width: 100%;
+    max-width: 700px;
+    border-radius: 20px;
+    box-shadow: 0 10px 35px rgba(13, 110, 253, 0.2);
+    outline: none;
+}
+
 .index-note-box {
     background: linear-gradient(135deg, #fff3cd, #ffeeba);
     border-left: 5px solid #ffc107;
@@ -320,9 +340,8 @@
 .index-carousel-slide img {
     width: 100%;
     height: 500px;
-    object-fit: contain;
+    object-fit: cover;
     display: block;
-    background: #f0f4f8;
 }
 
 .index-carousel-caption {
@@ -688,8 +707,6 @@
     
     .index-carousel-slide img {
         height: 300px;
-        object-fit: contain;
-        background: #f0f4f8;
     }
     
     .index-carousel-btn {
@@ -797,6 +814,15 @@
             </div>
             {% endif %}
 
+            <!-- Video Tutorial -->
+            <div class="index-video-section">
+                <p class="index-video-label">🎬 ¡Acá te mostramos cómo crear tu usuario paso a paso!</p>
+                <video class="index-tutorial-video" controls playsinline>
+                    <source src="{{ url_for('static', filename='images/monn.mp4') }}" type="video/mp4">
+                    Tu navegador no soporta la reproducción de video.
+                </video>
+            </div>
+
             <div class="index-note-box">
                 <p>
                     <strong>Importante:</strong> La prepaga es opcional. Podés sacar turnos y pagar por consulta individual sin necesidad de contratar un plan mensual.
@@ -813,7 +839,7 @@
         <div class="index-carousel-container">
             <div class="index-carousel-wrapper">
                 <div class="index-carousel-track" id="carouselTrack">
-                    {% for i in range(1, 9) %}
+                    {% for i in range(1, 11) %}
                     <div class="index-carousel-slide">
                         <img src="{{ url_for('static', filename='images/monn' ~ i ~ '.png') }}" 
                              alt="Instalación {{ i }}"
@@ -832,7 +858,7 @@
             </div>
             
             <div class="index-carousel-dots" id="carouselDots">
-                {% for i in range(8) %}
+                {% for i in range(10) %}
                 <div class="index-carousel-dot {% if i == 0 %}active{% endif %}" onclick="goToSlide({{ i }})"></div>
                 {% endfor %}
             </div>
@@ -941,11 +967,11 @@
                 <div class="index-location-info">
                     <div class="index-location-item">
                         <span class="index-location-icon">📍</span>
-                        <span class="index-location-text">614 e/ 514 y 515</span>
+                        <span class="index-location-text">[Dirección del consultorio monn1]</span>
                     </div>
                     <div class="index-location-item">
                         <span class="index-location-icon">📞</span>
-                        <span class="index-location-text">0221 310-5660</span>
+                        <span class="index-location-text">[Teléfono monn1]</span>
                     </div>
                     <div class="index-location-item">
                         <span class="index-location-icon">🕐</span>
@@ -959,11 +985,11 @@
                 <div class="index-location-info">
                     <div class="index-location-item">
                         <span class="index-location-icon">📍</span>
-                        <span class="index-location-text">Colectora N° 12061 - El Pato</span>
+                        <span class="index-location-text">[Dirección del consultorio monn2]</span>
                     </div>
                     <div class="index-location-item">
                         <span class="index-location-icon">📞</span>
-                        <span class="index-location-text">0221 310-5660</span>
+                        <span class="index-location-text">[Teléfono monn2]</span>
                     </div>
                     <div class="index-location-item">
                         <span class="index-location-icon">🕐</span>
@@ -980,7 +1006,7 @@
 <script>
 // Carrusel de imágenes
 let currentSlide = 0;
-const totalSlides = 8;
+const totalSlides = 10;
 let autoPlayInterval;
 
 function updateCarousel() {
