@@ -1,4 +1,4 @@
-afrom flask import Flask, render_template, request, redirect, url_for, session, flash, send_file, jsonify
+from flask import Flask, render_template, request, redirect, url_for, session, flash, send_file, jsonify
 from functools import wraps
 from datetime import datetime, date, time, timedelta
 from sqlalchemy import func, and_, or_
