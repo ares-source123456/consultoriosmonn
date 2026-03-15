@@ -747,11 +747,11 @@
 
     <!-- Banner Principal -->
     <div class="index-banner">
-        <img src="{{ url_for('static', filename='images/banner.png') }}" alt="Consultorios Monn" onerror="this.src='https://images.unsplash.com/photo-1631217868264-e5b90bb7e133?w=1600&h=450&fit=crop'">
+        <img src="{{ url_for('static', filename='images/banner.jpeg') }}" alt="Consultorios Monn" onerror="this.src='https://images.unsplash.com/photo-1631217868264-e5b90bb7e133?w=1600&h=450&fit=crop'">
         <div class="index-banner-overlay">
             <div class="index-banner-text">
                 <h1>Consultorios Monn</h1>
-                <p>Cuidando tu salud con profesionalismo y calidez</p>
+                <h2>Mucho mas que salud.</h2>
             </div>
         </div>
     </div>
@@ -762,7 +762,7 @@
             <div class="index-announcement">
                 <span>Nueva Prepaga Disponible</span>
             </div>
-            <h2>Unite y Atendete Gratis en Nuestros Consultorios</h2>
+            <h2>Adherite en Nuestros Consultorios</h2>
             <p class="index-hero-subtitle">
                 Suscribite a nuestra prepaga mensual y accedé a atención médica de calidad 
                 sin preocuparte por costos adicionales. Planes flexibles para vos y tu familia.
@@ -792,7 +792,7 @@
                 <div class="index-step-card">
                     <div class="index-step-number">1</div>
                     <h4>Crear Usuario</h4>
-                    <p>Registrate gratis en nuestro sistema</p>
+                    <p>Registrate en nuestro sistema</p>
                 </div>
                 <div class="index-step-card">
                     <div class="index-step-number">2</div>
@@ -812,14 +812,14 @@
                     Crear Mi Usuario Ahora
                 </a>
                 <p style="margin-top: 1rem; color: var(--med-gray); font-size: 0.95rem;">
-                    Gratis | Rápido | Sin compromiso
+                    Rápido | Sin compromiso
                 </p>
             </div>
             {% endif %}
 
             <!-- Video Tutorial -->
             <div class="index-video-section">
-                <p class="index-video-label">🎬 ¡Acá te mostramos cómo crear tu usuario paso a paso!</p>
+                <h1>🎬 ¡Acá te mostramos cómo crear tu usuario paso a paso!</h1>
                 <video class="index-tutorial-video" controls playsinline>
                     <source src="{{ url_for('static', filename='images/monn.mp4') }}" type="video/mp4">
                     Tu navegador no soporta la reproducción de video.
@@ -836,6 +836,15 @@
 
     <!-- Sección Conoce Nuestras Instalaciones -->
     <section class="index-facilities-section">
+
+            <div class="index-video-section">
+                <h1>🎬 ¡Nuestras instalaciones!</h1>
+                <video class="index-tutorial-video" controls playsinline>
+                    <source src="{{ url_for('static', filename='images/cord.mp4') }}" type="video/mp4">
+                    Tu navegador no soporta la reproducción de video.
+                </video>
+            </div>
+
         <h3 class="index-facilities-title">Conoce Nuestras Instalaciones</h3>
         <p class="index-facilities-subtitle">Espacios modernos diseñados para tu comodidad y bienestar</p>
         
@@ -905,7 +914,7 @@
                     <div class="index-plan-period">Por mes</div>
                 </div>
                 <ul class="index-plan-features">
-                    <li>10 atenciones por persona</li>
+                    <li>10 atenciones cubiertas</li>
                     <li>Todas las especialidades</li>
                     <li>Turnos online 24/7</li>
                     <li>Historial médico digital</li>
@@ -925,7 +934,7 @@
                     <div class="index-plan-period">Por mes</div>
                 </div>
                 <ul class="index-plan-features">
-                    <li>10 atenciones por persona</li>
+                    <li>10 atenciones cubiertas</li>
                     <li>Todas las especialidades</li>
                     <li>Cobertura hasta 4 personas</li>
                     <li>Médico en línea incluido</li>
@@ -945,7 +954,7 @@
                     <div class="index-plan-period">Por mes</div>
                 </div>
                 <ul class="index-plan-features">
-                    <li>10 atenciones por persona</li>
+                    <li>10 atenciones cubiertas</li>
                     <li>Todas las especialidades</li>
                     <li>Más de 4 personas</li>
                     <li>Médico en línea incluido</li>
@@ -966,15 +975,16 @@
         
         <div class="index-locations-grid">
             <div class="index-location-card">
-                <h4 class="index-location-title">Consultorio Monn - 1</h4>
+                <h4 class="index-location-title">Consultorio Monn - I</h4>
                 <div class="index-location-info">
                     <div class="index-location-item">
                         <span class="index-location-icon">📍</span>
-                        <span class="index-location-text">[Dirección del consultorio monn1]</span>
+                        <span class="index-location-text">Calle 514, esquina 614</span>
                     </div>
                     <div class="index-location-item">
                         <span class="index-location-icon">📞</span>
-                        <span class="index-location-text">[Teléfono monn1]</span>
+                        <span class="index-location-text">Whatsapp 2213105660</span>
+                        <span class="index-location-text">Linea fija 01121137923</span>
                     </div>
                     <div class="index-location-item">
                         <span class="index-location-icon">🕐</span>
@@ -984,15 +994,15 @@
             </div>
 
             <div class="index-location-card">
-                <h4 class="index-location-title">Consultorio Monn - 2</h4>
+                <h4 class="index-location-title">Consultorio Monn - II</h4>
                 <div class="index-location-info">
                     <div class="index-location-item">
                         <span class="index-location-icon">📍</span>
-                        <span class="index-location-text">[Dirección del consultorio monn2]</span>
+                        <span class="index-location-text">Sobre colectora Nº 12061</span>
                     </div>
                     <div class="index-location-item">
                         <span class="index-location-icon">📞</span>
-                        <span class="index-location-text">[Teléfono monn2]</span>
+                        <span class="index-location-text">Whatsapp 011 32875861</span>
                     </div>
                     <div class="index-location-item">
                         <span class="index-location-icon">🕐</span>
