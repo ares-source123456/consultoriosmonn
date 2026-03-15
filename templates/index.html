@@ -582,6 +582,47 @@
     background: var(--med-light);
 }
 
+.index-location-title-wrapper {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    margin-bottom: 1.5rem;
+}
+
+.index-location-logo {
+    width: 50px;
+    height: 50px;
+    border-radius: 10px;
+    object-fit: cover;
+    box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+}
+
+.index-location-title {
+    margin-bottom: 0;
+}
+
+.index-location-map-link {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    margin-top: 1rem;
+    padding: 0.6rem 1.2rem;
+    background: var(--med-gradient);
+    color: white;
+    border-radius: 25px;
+    text-decoration: none;
+    font-weight: 600;
+    font-size: 0.9rem;
+    transition: all 0.3s ease;
+    box-shadow: 0 4px 15px rgba(13, 110, 253, 0.3);
+}
+
+.index-location-map-link:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(13, 110, 253, 0.4);
+    color: white;
+}
+
 .index-locations-grid {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
@@ -975,7 +1016,10 @@
         
         <div class="index-locations-grid">
             <div class="index-location-card">
-                <h4 class="index-location-title">Consultorio Monn - I</h4>
+                <div class="index-location-title-wrapper">
+                    <img src="{{ url_for('static', filename='images/logo.jpeg') }}" alt="Logo Monn" class="index-location-logo">
+                    <h4 class="index-location-title">Consultorio Monn - I</h4>
+                </div>
                 <div class="index-location-info">
                     <div class="index-location-item">
                         <span class="index-location-icon">📍</span>
@@ -990,11 +1034,17 @@
                         <span class="index-location-icon">🕐</span>
                         <span class="index-location-text">Lunes a Viernes: 8:00 - 20:00<br>Sábados: 9:00 - 13:00</span>
                     </div>
+                    <a href="https://share.google/1H7lpXNJXCcwWgiBo" target="_blank" rel="noopener noreferrer" class="index-location-map-link" data-testid="monn-1-maps-link">
+                        <span>📍</span> Ver en Google Maps
+                    </a>
                 </div>
             </div>
 
             <div class="index-location-card">
-                <h4 class="index-location-title">Consultorio Monn - II</h4>
+                <div class="index-location-title-wrapper">
+                    <img src="{{ url_for('static', filename='images/logo.jpeg') }}" alt="Logo Monn" class="index-location-logo">
+                    <h4 class="index-location-title">Consultorio Monn - II</h4>
+                </div>
                 <div class="index-location-info">
                     <div class="index-location-item">
                         <span class="index-location-icon">📍</span>
@@ -1008,6 +1058,9 @@
                         <span class="index-location-icon">🕐</span>
                         <span class="index-location-text">Lunes a Viernes: 8:00 - 20:00<br>Sábados: 9:00 - 13:00</span>
                     </div>
+                    <a href="https://share.google/Cjtv93XuZ2LRCqz21" target="_blank" rel="noopener noreferrer" class="index-location-map-link" data-testid="monn-2-maps-link">
+                        <span>📍</span> Ver en Google Maps
+                    </a>
                 </div>
             </div>
         </div>
