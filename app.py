@@ -76,23 +76,23 @@ def calcular_costo_grupo_familiar(usuario_id):
 
 # ==================== RUTAS PÚBLICAS ====================
 
-#@app.route('/')
-#def index():
-#    especialidades = Especialidad.query.filter_by(activo=True).all()
-#    
-#    # Calcular costo simulado para vista previa
-#    costo_base = app.config['COSTO_BASE_CONSULTA']
-#    
-#    return render_template('index.html', 
-#                         especialidades=especialidades,
-#                         costo_base=costo_base)
-
 @app.route('/')
 def index():
-    return redirect(url_for('pago'))
-@app.route('/pago')
-def pago():
-    return render_template('pago.html')
+    especialidades = Especialidad.query.filter_by(activo=True).all()
+    
+    # Calcular costo simulado para vista previa
+    costo_base = app.config['COSTO_BASE_CONSULTA']
+    
+    return render_template('index.html', 
+                         especialidades=especialidades,
+                         costo_base=costo_base)
+
+#@app.route('/')
+#def index():
+#    return redirect(url_for('pago'))
+#@app.route('/pago')
+#def pago():
+#    return render_template('pago.html')
 
 @app.route('/simular-costo', methods=['POST'])
 def simular_costo():
