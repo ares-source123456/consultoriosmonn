@@ -1,0 +1,334 @@
+{% extends "base.html" %}
+
+{% block title %}Cargar Historia Pasada{% endblock %}
+
+{% block extra_css %}
+<style>
+    .manual-turno-container {
+        max-width: 900px;
+        margin: 0 auto;
+        padding: 2rem;
+    }
+
+    .manual-turno-header {
+        text-align: center;
+        margin-bottom: 2rem;
+        padding: 1.5rem;
+        background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+        border-radius: 16px;
+        color: white;
+    }
+
+    .manual-turno-header h1 {
+        margin: 0;
+        font-size: 1.8rem;
+    }
+
+    .manual-turno-header p {
+        margin: 0.5rem 0 0;
+        opacity: 0.9;
+    }
+
+    .search-patient-section {
+        background: #f8fafc;
+        padding: 1.5rem;
+        border-radius: 12px;
+        margin-bottom: 2rem;
+        border: 2px solid #e2e8f0;
+    }
+
+    .search-patient-section h3 {
+        margin-top: 0;
+        color: #334155;
+    }
+
+    .search-row {
+        display: flex;
+        gap: 1rem;
+        align-items: flex-end;
+    }
+
+    .search-row .form-group {
+        flex: 1;
+        margin-bottom: 0;
+    }
+
+    .patient-info-card {
+        display: none;
+        background: #ecfdf5;
+        border: 2px solid #10b981;
+        border-radius: 12px;
+        padding: 1.5rem;
+        margin-top: 1rem;
+    }
+
+    .patient-info-card.active {
+        display: block;
+    }
+
+    .patient-info-card h4 {
+        margin: 0 0 1rem;
+        color: #065f46;
+    }
+
+    .patient-info-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        gap: 1rem;
+    }
+
+    .patient-info-item {
+        background: white;
+        padding: 0.75rem;
+        border-radius: 8px;
+    }
+
+    .patient-info-item label {
+        font-size: 0.75rem;
+        color: #6b7280;
+        text-transform: uppercase;
+        margin-bottom: 0.25rem;
+        display: block;
+    }
+
+    .patient-info-item span {
+        font-weight: 600;
+        color: #1f2937;
+    }
+
+    .form-step-manual {
+        background: white;
+        padding: 1.5rem;
+        border-radius: 12px;
+        border: 1px solid #e5e7eb;
+        margin-bottom: 1.5rem;
+    }
+
+    .form-step-manual legend {
+        background: #10b981;
+        color: white;
+        padding: 0.5rem 1rem;
+        border-radius: 20px;
+        font-size: 0.9rem;
+        font-weight: 600;
+    }
+
+    .especialistas-grid-manual {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+        gap: 1rem;
+        margin-top: 1rem;
+    }
+
+    .especialista-option input[type="radio"] {
+        display: none;
+    }
+
+    .especialista-option label {
+        display: block;
+        padding: 1rem;
+        border: 2px solid #e2e8f0;
+        border-radius: 10px;
+        cursor: pointer;
+        text-align: center;
+        transition: all 0.2s ease;
+        background: white;
+    }
+
+    .especialista-option input:checked + label {
+        border-color: #10b981;
+        background: #ecfdf5;
+        transform: translateY(-2px);
+    }
+
+    .especialista-option label:hover {
+        border-color: #6ee7b7;
+    }
+
+    .btn-crear-turno {
+        width: 100%;
+        padding: 1rem;
+        background: #10b981;
+        color: white;
+        border: none;
+        border-radius: 10px;
+        font-size: 1.1rem;
+        font-weight: 600;
+        cursor: pointer;
+        transition: background 0.3s ease;
+    }
+
+    .btn-crear-turno:hover {
+        background: #059669;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="manual-turno-container">
+    <div class="manual-turno-header">
+        <h1>Cargar Historia Pasada</h1>
+        <p>Registre consultas previas con su fecha real, profesional y observaciones.</p>
+    </div>
+
+    <!-- Paso 1: Buscar Paciente -->
+    <div class="search-patient-section">
+        <h3>Paso 1: Seleccionar Paciente</h3>
+        <div class="search-row">
+            <div class="form-group">
+                <label for="searchDNI">DNI del Paciente</label>
+                <input type="text" id="searchDNI" class="form-control" placeholder="Ingrese DNI">
+            </div>
+            <button type="button" class="btn btn-primary" onclick="buscarPaciente()">Buscar</button>
+        </div>
+
+        <!-- Resultados de búsqueda -->
+        <div id="patientInfoCard" class="patient-info-card">
+            <h4>Paciente Seleccionado</h4>
+            <div class="patient-info-grid">
+                <div class="patient-info-item">
+                    <label>Nombre Completo</label>
+                    <span id="patientName">-</span>
+                </div>
+                <div class="patient-info-item">
+                    <label>DNI</label>
+                    <span id="patientDNI">-</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Formulario de Turno Histórico -->
+    <form id="historiaPasadaForm" method="POST" action="{{ url_for('admin.cargar_historia_pasada') }}" style="display: none;">
+        <input type="hidden" name="paciente_id" id="formPacienteId" required>
+        <input type="hidden" name="especialista_id" id="formEspecialistaId" required>
+        <input type="hidden" name="especialidad_id" id="formEspecialidadId" required>
+
+        <!-- Paso 2: Especialidad -->
+        <fieldset class="form-step-manual">
+            <legend>Paso 2: Seleccionar Especialidad</legend>
+            <div class="especialistas-grid-manual">
+                {% for esp in especialidades %}
+                <div class="especialista-option">
+                    <input type="radio" name="especialidad_radio" id="esp_{{ esp.id }}" 
+                           value="{{ esp.id }}" onchange="seleccionarEspecialidad({{ esp.id }})" required>
+                    <label for="esp_{{ esp.id }}">
+                        <strong>{{ esp.nombre }}</strong>
+                    </label>
+                </div>
+                {% endfor %}
+            </div>
+        </fieldset>
+
+        <!-- Paso 3: Profesional -->
+        <fieldset class="form-step-manual">
+            <legend>Paso 3: Seleccionar Profesional</legend>
+            <div id="especialistasLoading" class="loading-indicator" style="display: none;">
+                Cargando profesionales...
+            </div>
+            <div id="especialistasGrid" class="especialistas-grid-manual"></div>
+        </fieldset>
+
+        <!-- Paso 4: Fecha y Hora -->
+        <fieldset class="form-step-manual">
+            <legend>Paso 4: Fecha y Hora de la Consulta Pasada</legend>
+            <div class="form-row" style="display: flex; gap: 1rem;">
+                <div class="form-group" style="flex: 1;">
+                    <label for="fechaTurno">Fecha</label>
+                    <input type="date" id="fechaTurno" name="fecha" class="form-control" required max="{{ today }}">
+                </div>
+                <div class="form-group" style="flex: 1;">
+                    <label for="horaTurno">Hora</label>
+                    <input type="time" id="horaTurno" name="hora" class="form-control" required value="00:00">
+                </div>
+            </div>
+        </fieldset>
+
+        <!-- Paso 5: Detalles Clínicos -->
+        <fieldset class="form-step-manual">
+            <legend>Paso 5: Detalles Clínicos</legend>
+            <div class="form-group">
+                <label for="motivoConsulta">Motivo de Consulta (Opcional)</label>
+                <input type="text" id="motivoConsulta" name="motivo_consulta" class="form-control">
+            </div>
+            <div class="form-group mt-3">
+                <label for="observaciones">Historia Clínica / Observaciones (Requerido)</label>
+                <textarea id="observaciones" name="observaciones" class="form-control" rows="5" required></textarea>
+            </div>
+        </fieldset>
+
+        <button type="submit" class="btn-crear-turno">Guardar Historia Pasada</button>
+    </form>
+</div>
+
+<script>
+async function buscarPaciente() {
+    const dni = document.getElementById('searchDNI').value.trim();
+    if (!dni) {
+        alert('Ingrese un DNI');
+        return;
+    }
+
+    try {
+        const response = await fetch(`/api/buscar-paciente-por-dni?dni=${dni}`);
+        const data = await response.json();
+
+        if (data.encontrado) {
+            document.getElementById('patientName').textContent = data.nombre;
+            document.getElementById('patientDNI').textContent = data.dni;
+            document.getElementById('patientInfoCard').classList.add('active');
+            
+            document.getElementById('formPacienteId').value = data.id;
+            document.getElementById('historiaPasadaForm').style.display = 'block';
+        } else {
+            alert('Paciente no encontrado. Por favor, registrelo primero en el sistema regular o intente con otro DNI.');
+            document.getElementById('patientInfoCard').classList.remove('active');
+            document.getElementById('historiaPasadaForm').style.display = 'none';
+        }
+    } catch (error) {
+        console.error('Error:', error);
+        alert('Error al buscar paciente');
+    }
+}
+
+async function seleccionarEspecialidad(espId) {
+    document.getElementById('formEspecialidadId').value = espId;
+    
+    // Cargar especialistas
+    document.getElementById('especialistasLoading').style.display = 'block';
+    document.getElementById('especialistasGrid').innerHTML = '';
+
+    try {
+        const response = await fetch(`/api/especialistas-por-especialidad?especialidad_id=${espId}`);
+        const data = await response.json();
+        
+        document.getElementById('especialistasLoading').style.display = 'none';
+        
+        const grid = document.getElementById('especialistasGrid');
+        if (data.especialistas.length === 0) {
+            grid.innerHTML = '<p>No hay especialistas para esta especialidad.</p>';
+            return;
+        }
+
+        data.especialistas.forEach(esp => {
+            grid.innerHTML += `
+                <div class="especialista-option">
+                    <input type="radio" name="especialista_radio" id="medico_${esp.id}" 
+                           value="${esp.id}" onchange="seleccionarEspecialista(${esp.id})" required>
+                    <label for="medico_${esp.id}">
+                        <strong>Dr/a. ${esp.nombre}</strong>
+                    </label>
+                </div>
+            `;
+        });
+    } catch (error) {
+        document.getElementById('especialistasLoading').style.display = 'none';
+        console.error('Error:', error);
+    }
+}
+
+function seleccionarEspecialista(id) {
+    document.getElementById('formEspecialistaId').value = id;
+}
+</script>
+{% endblock %}

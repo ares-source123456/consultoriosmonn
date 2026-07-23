@@ -779,3 +779,70 @@ def api_fechas_disponibles():
         
     except Exception as e:
         return jsonify({'error': str(e)}), 500
+
+# ==================== CARGA DE HISTORIA CLÍNICA PASADA ====================
+
+@admin_bp.route('/historia-pasada', methods=['GET', 'POST'])
+@permission_required('turnos:crear')  # o un permiso específico de admin
+def cargar_historia_pasada():
+    """Cargar historia clínica retrospectiva"""
+    from models import Turno, Pago, EstadoTurno, EstadoPago
+    
+    if request.method == 'POST':
+        try:
+            paciente_id = request.form.get('paciente_id')
+            especialista_id = request.form.get('especialista_id')
+            especialidad_id = request.form.get('especialidad_id')
+            fecha_str = request.form.get('fecha')
+            hora_str = request.form.get('hora')
+            motivo_consulta = request.form.get('motivo_consulta')
+            observaciones = request.form.get('observaciones')
+            
+            if not all([paciente_id, especialista_id, especialidad_id, fecha_str, hora_str, observaciones]):
+                flash('Faltan campos obligatorios', 'danger')
+                return redirect(url_for('admin.cargar_historia_pasada'))
+                
+            fecha = datetime.strptime(fecha_str, '%Y-%m-%d').date()
+            hora = datetime.strptime(hora_str, '%H:%M').time()
+            
+            # Crear el turno histórico en estado REALIZADO
+            nuevo_turno = Turno(
+                paciente_id=int(paciente_id),
+                especialista_id=int(especialista_id),
+                especialidad_id=int(especialidad_id),
+                fecha=fecha,
+                hora=hora,
+                motivo_consulta=motivo_consulta,
+                observaciones=observaciones,
+                estado=EstadoTurno.REALIZADO
+            )
+            
+            db.session.add(nuevo_turno)
+            db.session.flush() # Para obtener el ID
+            
+            # Crear pago sin costo
+            nuevo_pago = Pago(
+                turno_id=nuevo_turno.id,
+                monto=0,
+                estado=EstadoPago.APROBADO,
+                observaciones="Carga histórica manual sin costo"
+            )
+            
+            db.session.add(nuevo_pago)
+            db.session.commit()
+            
+            log_admin_action('historia_pasada:crear', f"Turno histórico creado. Paciente: {paciente_id}")
+            flash('Historia clínica retrospectiva guardada con éxito', 'success')
+            return redirect(url_for('admin.cargar_historia_pasada'))
+            
+        except Exception as e:
+            db.session.rollback()
+            flash(f'Error al guardar historia pasada: {str(e)}', 'danger')
+            return redirect(url_for('admin.cargar_historia_pasada'))
+            
+    # GET: Mostrar formulario
+    especialidades = Especialidad.query.filter_by(activo=True).order_by(Especialidad.nombre).all()
+    today = datetime.now().strftime('%Y-%m-%d')
+    return render_template('admin/historia_pasada_form.html', 
+                           especialidades=especialidades, 
+                           today=today)

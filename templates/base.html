@@ -191,6 +191,7 @@
                             <a href="{{ url_for('admin.listar_especialistas') }}">Especialistas</a>
                             {% if session.get('user_rol') == 'admin' %}
                                 <hr>
+                                <a href="{{ url_for('admin.cargar_historia_pasada') }}">Cargar Historia Pasada</a>
                                 <a href="{{ url_for('ver_movimientos') }}">Movimientos</a>
                                 <a href="{{ url_for('admin.listar_usuarios_admin') }}">Usuarios Admin</a>
                             {% endif %}
